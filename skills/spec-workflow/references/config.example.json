@@ -1,0 +1,6 @@
+{
+  "specRoot": "/absolute/path/to/spec-notes",
+  "projectFolders": {
+    "example-project": "example-project"
+  }
+}

@@ -1,0 +1,4 @@
+spec-workflow.json
+*.local.json
+.DS_Store
+Thumbs.db
