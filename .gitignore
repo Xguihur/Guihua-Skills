@@ -1,4 +1,5 @@
 spec-workflow.json
 *.local.json
+/skills/zentao-my-bugs/.local/
 .DS_Store
 Thumbs.db
