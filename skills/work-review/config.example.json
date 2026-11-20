@@ -2,5 +2,9 @@
   "vaultRoot": "D:/Obsidian/WorkVault",
   "specDirectory": "Specs",
   "reviewDirectory": "Review",
-  "chatNotesDirectory": null
+  "chatNotesDirectory": null,
+  "logseq": {
+    "rootDir": "C:/Users/you/logseq",
+    "graph": "Work"
+  }
 }

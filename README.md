@@ -8,7 +8,7 @@
 | --- | --- |
 | [spec-workflow](skills/spec-workflow/SKILL.md) | 新需求与 bug 修复默认先制定 spec，保留 SDD、行为/接口契约、TDD 和测试基线 |
 | [zentao-my-bugs](skills/zentao-my-bugs/SKILL.md) | 查询禅道指派给当前账号的 Bug 数量、列表和指定 Bug 详情 |
-| [work-review](skills/work-review/SKILL.md) | 汇总禅道、GitLab 和 Obsidian 工作记录，生成并归档个人周复盘或月度复盘 |
+| [work-review](skills/work-review/SKILL.md) | 汇总 Logseq 日记、禅道、GitLab 和 Obsidian 工作记录，生成并归档个人日、周或月度复盘 |
 
 ## 安装
 
@@ -18,7 +18,7 @@
 
 Codex 和 OMP 可以共用 `~/.agents/skills/`。安装 `zentao-my-bugs` 时，将该目录下的同名入口链接到仓库中的 `skills/zentao-my-bugs`，以便技能和本机配置使用同一处文件。配置与登录步骤见技能说明。
 
-安装 `work-review` 时，将 `~/.agents/skills/work-review` 链接到仓库中的 `skills/work-review`。将[配置示例](skills/work-review/config.example.json)复制成同目录的 `work-review.local.json`，填写 vault 绝对路径及各子目录的相对路径。`chatNotesDirectory` 可设为 `null`。确认 OMP Chatbot 能访问 vault 和已有查询工具后，可用「复盘上周」起草，再用「归档这次复盘」保存。
+安装 `work-review` 时，将 `~/.agents/skills/work-review` 链接到仓库中的 `skills/work-review`。将[配置示例](skills/work-review/config.example.json)复制成同目录的 `work-review.local.json`，填写 vault 绝对路径及各子目录的相对路径。`chatNotesDirectory` 可设为 `null`。接入 Logseq DB 日记时，在 Chatbot 运行环境安装 `logseq` CLI，配置根目录和图谱名。没有 Logseq 时可省略 `logseq`。可用「复盘今天」或「复盘上周」起草，再用「归档这次复盘」保存。
 
 ## Spec 输出目录配置
 
