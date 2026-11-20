@@ -9,6 +9,39 @@ const localDirectory = path.resolve(__dirname, '..', '.local');
 const configPath = path.join(localDirectory, 'config.json');
 const credentialPath = path.join(localDirectory, 'login.dpapi');
 
+const bugScopes = new Map([
+  ['assigned', { status: 'assigntome', actor: 'assignedTo' }],
+  ['resolved', { status: 'resolvedbyme', actor: 'resolvedBy', date: 'resolvedDate' }],
+  ['opened', { status: 'openedbyme', actor: 'openedBy', date: 'openedDate' }],
+]);
+
+function accountOf(user) {
+  return (typeof user === 'string' ? user : user?.account) || null;
+}
+
+function dayStart(value, option) {
+  const utc = Date.parse(`${value}T00:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(utc) || new Date(utc).toISOString().slice(0, 10) !== value) {
+    throw new Error(`Provide a valid YYYY-MM-DD date with --${option}.`);
+  }
+  return Date.parse(`${value}T00:00:00+08:00`);
+}
+
+function eventTime(value) {
+  if (typeof value !== 'string') return NaN;
+  const dateTime = value.trim().replace(' ', 'T');
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateTime)) return Date.parse(`${dateTime}T00:00:00+08:00`);
+  return Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(dateTime) ? dateTime : `${dateTime}+08:00`);
+}
+
+function bugActivity(bug) {
+  return {
+    assignedTo: accountOf(bug.assignedTo), openedBy: accountOf(bug.openedBy), openedDate: bug.openedDate,
+    resolvedBy: accountOf(bug.resolvedBy), resolvedDate: bug.resolvedDate, resolution: bug.resolution,
+    closedBy: accountOf(bug.closedBy), closedDate: bug.closedDate,
+  };
+}
+
 async function readPassword() {
   if (!process.stdin.isTTY) throw new Error('Run --save-login in your interactive terminal.');
 
@@ -64,6 +97,9 @@ async function main() {
     'count-only': { type: 'boolean' },
     'save-login': { type: 'boolean' },
     bug: { type: 'string' },
+    scope: { type: 'string' },
+    from: { type: 'string' },
+    to: { type: 'string' },
   } });
   if ([values['count-only'], values['save-login'], values.bug !== undefined].filter(Boolean).length > 1) {
     throw new Error('Choose one of --count-only, --save-login, and --bug.');
@@ -72,6 +108,16 @@ async function main() {
   if (bugId !== undefined && (!/^[1-9]\d*$/.test(bugId) || !Number.isSafeInteger(Number(bugId)))) {
     throw new Error('Provide a positive Bug ID with --bug.');
   }
+  const scope = bugScopes.get(values.scope ?? 'assigned');
+  if (!scope) throw new Error('Choose assigned, resolved, or opened with --scope.');
+  const filterByDate = values.from !== undefined || values.to !== undefined;
+  if ((values['save-login'] || bugId !== undefined) && (values.scope !== undefined || filterByDate)) {
+    throw new Error('Use --scope, --from, and --to with list or count queries.');
+  }
+  if (filterByDate && !scope.date) throw new Error('Use --from and --to with --scope resolved or --scope opened.');
+  const from = values.from === undefined ? -Infinity : dayStart(values.from, 'from');
+  const until = values.to === undefined ? Infinity : dayStart(values.to, 'to') + 86_400_000;
+  if (from >= until) throw new Error('--from must be on or before --to.');
 
   if (!existsSync(configPath)) throw new Error('Create .local/config.json using config.example.json.');
   let config;
@@ -142,6 +188,10 @@ async function main() {
       id: Number(bugId), title: bug.title, status: bug.status, priority: bug.pri,
       product: bug.productName, module: bug.moduleTitle, stepsHtml: bug.steps,
       url: `${siteRoot}/bug-view-${bugId}.html`,
+      ...bugActivity(bug),
+      actions: Array.isArray(bug.actions) ? bug.actions.map(({ id, actor, action, date, comment }) => ({
+        id, actor, action, date, commentHtml: comment,
+      })) : undefined,
     } };
   }
 
@@ -164,25 +214,38 @@ async function main() {
 
   const products = await list('/products', { status: 'all', order: 'id_asc' }, 'products');
   const bugsById = new Map();
+  const undatedBugIds = new Set();
   for (const product of products) {
     const productId = Number(product.id);
     if (!Number.isSafeInteger(productId) || productId < 1) throw new Error('Invalid ZenTao product ID.');
-    const bugs = await list(`/products/${productId}/bugs`, { status: 'assigntome' }, 'bugs');
+    const bugs = await list(`/products/${productId}/bugs`, { status: scope.status }, 'bugs');
     for (const bug of bugs) {
-      const assignee = typeof bug.assignedTo === 'string' ? bug.assignedTo : bug.assignedTo?.account;
       const id = Number(bug.id);
-      if (assignee !== account) throw new Error(`Unexpected assignee on Bug #${id}. Check the API account.`);
       if (!Number.isSafeInteger(id) || id < 1) throw new Error('Invalid ZenTao Bug ID.');
+      if (accountOf(bug[scope.actor]) !== account) {
+        throw new Error(`Unexpected ${scope.actor} on Bug #${id}. Check the API account and list filter.`);
+      }
+      if (filterByDate) {
+        const time = eventTime(bug[scope.date]);
+        if (!Number.isFinite(time) || time <= 0) {
+          undatedBugIds.add(id);
+          continue;
+        }
+        if (time < from || time >= until) continue;
+      }
       bugsById.set(id, {
         id, title: bug.title, status: bug.status, priority: bug.pri, product: product.name,
         url: `${siteRoot}/bug-view-${id}.html`,
+        ...(scope.date && bugActivity(bug)),
       });
     }
   }
 
-  if (values['count-only']) return { ok: true, count: bugsById.size };
+  const summary = { ok: true, count: bugsById.size };
+  if (filterByDate) summary.undatedCount = undatedBugIds.size;
+  if (values['count-only']) return summary;
   const bugs = [...bugsById.values()].sort((left, right) => right.id - left.id);
-  return { ok: true, count: bugs.length, bugs };
+  return { ...summary, bugs };
 }
 
 main().then((result) => {

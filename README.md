@@ -7,7 +7,7 @@
 | Skill | 用途 |
 | --- | --- |
 | [spec-workflow](skills/spec-workflow/SKILL.md) | 新需求与 bug 修复默认先制定 spec，保留 SDD、行为/接口契约、TDD 和测试基线 |
-| [zentao-my-bugs](skills/zentao-my-bugs/SKILL.md) | 查询禅道指派给当前账号的 Bug 数量、列表和指定 Bug 详情 |
+| [zentao-my-bugs](skills/zentao-my-bugs/SKILL.md) | 查询指派给我、由我解决或由我创建的禅道 Bug，支持日期筛选和详情操作记录 |
 | [work-review](skills/work-review/SKILL.md) | 汇总 Logseq 日记、禅道、GitLab 和 Obsidian 工作记录，生成并归档个人日、周或月度复盘 |
 
 ## 安装
