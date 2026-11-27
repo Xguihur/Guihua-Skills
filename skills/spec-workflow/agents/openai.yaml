@@ -1,6 +1,6 @@
 interface:
   display_name: "Spec 工作流"
-  short_description: "需求与修复先写方案，保留 SDD、行为契约、TDD 及测试基线"
-  default_prompt: "使用 $spec-workflow 核查当前需求并先输出包含契约、验收和测试策略的 spec。"
+  short_description: "需求与修复先写 spec，明确行为契约、按风险验证的范围及停止条件"
+  default_prompt: "使用 $spec-workflow 核查当前需求并先输出包含契约、验收、必跑检查、扩大检查条件及停止条件的 spec。"
 policy:
   allow_implicit_invocation: true
